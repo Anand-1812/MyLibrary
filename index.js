@@ -1,54 +1,3 @@
-let myLibrary = [];
-
-document.addEventListener("DOMContentLoaded", () => {
-    const addButton = document.querySelector(".add-btn");
-    const dialog = document.getElementById("form-dialog");
-    const form = document.getElementById("book-form");
-    const closeButton = document.getElementById("close-btn");
-
-    // Open dialog
-    addButton.addEventListener("click", () => {
-        dialog.showModal();
-    });
-
-    // Close dialog
-    closeButton.addEventListener("click", () => {
-        dialog.close();
-    });
-
-    // Escape key closes
-    dialog.addEventListener("cancel", (e) => {
-        e.preventDefault();
-        dialog.close();
-    });
-
-    // Handle form submission
-    form.addEventListener("submit", (e) => {
-        e.preventDefault();
-
-        const title = form.title.value.trim();
-        const author = form.author.value.trim();
-        const pages = Number(form.pages.value);
-        const read = form.read.checked;
-
-        if (title && author && pages) {
-            addBookToLibrary(myLibrary.length + 1, title, author, pages, read);
-            displayBooks();
-            dialog.close();
-            form.reset();
-        } else {
-            alert("Please fill in all required fields.");
-        }
-    });
-
-    // Initial books
-    addBookToLibrary(1, "The Stranger", "Albert Camus", 720, false);
-    addBookToLibrary(2, "1984", "George Orwell", 304, false);
-    addBookToLibrary(3, "Sapiens", "Yuval Noah Harari", 144, false);
-
-    displayBooks();
-});
-
 class Book {
     constructor(serial, title, author, pages, read) {
         this.id = crypto.randomUUID();
@@ -59,60 +8,136 @@ class Book {
         this.read = read;
     }
 
-    //prototype function for read status
     toggleRead() {
         this.read = !this.read;
     }
 }
 
-function addBookToLibrary(serial, title, author, pages, read) {
-    let newBook = new Book(serial, title, author, pages, read);
-    myLibrary.push(newBook);
+class BookManager {
+    constructor() {
+        this.myLibrary = [];
+    }
+
+    addBook(serial, title, author, pages, read) {
+        const newBook = new Book(serial, title, author, pages, read);
+        this.myLibrary.push(newBook);
+    }
+
+    deleteBook(index) {
+        this.myLibrary.splice(index, 1);
+    }
+
+    toggleRead(index) {
+        this.myLibrary[index].toggleRead();
+    }
+
+    getBooks() {
+        return this.myLibrary;
+    }
 }
 
-function displayBooks() {
-    const tableBody = document.querySelector(".table-body");
-    tableBody.innerHTML = "";
+class LibraryUI {
+    constructor(addBtn, dialog, form, closeBtn, tableBody, bookManager) {
+        this.addBtn = addBtn;
+        this.dialog = dialog;
+        this.form = form;
+        this.closeBtn = closeBtn;
+        this.tableBody = tableBody;
+        this.bookManager = bookManager;
+    }
 
-    myLibrary.forEach((book, index) => {
-        const row = document.createElement("tr");
-
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${book.title}</td>
-            <td>${book.author}</td>
-            <td>${book.pages || "-"}</td>
-            <td>
-                <button class="toggle-read-btn" data-index="${index}">
-                    ${book.read ? "Yes" : "No"}
-                </button>
-            </td>
-            <td>
-                <button data-index="${index}">
-                    <img src="./images/delete_img.svg" alt="delete" class="delete-btn">
-                </button>
-            </td>
-        `;
-        tableBody.appendChild(row);
-    });
-
-    // delete the books
-    const deleteButtons = document.querySelectorAll(".delete-btn");
-    deleteButtons.forEach((button) => {
-        button.addEventListener("click", (e) => {
-            const idx = parseInt(e.currentTarget.getAttribute("data-index"));
-            myLibrary.splice(idx, 1);
-            displayBooks();
+    init() {
+        this.addBtn.addEventListener("click", () => this.dialog.showModal());
+        this.closeBtn.addEventListener("click", () => this.dialog.close());
+        this.dialog.addEventListener("cancel", (e) => {
+            e.preventDefault();
+            this.dialog.close();
         });
-    });
 
-    // toogle for read status
-    const toggleButton = document.querySelectorAll(".toggle-read-btn");
-    toggleButton.forEach((button) => {
-        button.addEventListener("click", (e) => {
-            const idx = parseInt(e.currentTarget.getAttribute("data-index"));
-            myLibrary[idx].toggleRead(); // call prototype
-            displayBooks();
-        })
-    }) 
+        this.form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            this.handleFormSubmit();
+        });
+
+        this.renderBooks();
+    }
+
+    handleFormSubmit() {
+        const title = this.form.title.value.trim();
+        const author = this.form.author.value.trim();
+        const pages = Number(this.form.pages.value);
+        const read = this.form.read.checked;
+
+        if (title && author && pages) {
+            this.bookManager.addBook(this.bookManager.getBooks().length + 1, title, author, pages, read);
+            this.renderBooks();
+            this.dialog.close();
+            this.form.reset();
+        } else {
+            alert("Please fill in all required fields.");
+        }
+    }
+
+    renderBooks() {
+        this.tableBody.innerHTML = "";
+
+        this.bookManager.getBooks().forEach((book, index) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${book.title}</td>
+                <td>${book.author}</td>
+                <td>${book.pages || "-"}</td>
+                <td>
+                    <button class="toggle-read-btn" data-index="${index}">
+                        ${book.read ? "Yes" : "No"}
+                    </button>
+                </td>
+                <td>
+                    <button class="delete-btn" data-index="${index}">
+                        <img src="./images/delete_img.svg" alt="delete">
+                    </button>
+                </td>
+            `;
+            this.tableBody.appendChild(row);
+        });
+
+        this.attachRowListeners();
+    }
+
+    attachRowListeners() {
+        this.tableBody.querySelectorAll(".delete-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                const index = +e.currentTarget.dataset.index;
+                this.bookManager.deleteBook(index);
+                this.renderBooks();
+            });
+        });
+
+        this.tableBody.querySelectorAll(".toggle-read-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                const index = +e.currentTarget.dataset.index;
+                this.bookManager.toggleRead(index);
+                this.renderBooks();
+            });
+        });
+    }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    const addBtn = document.querySelector(".add-btn");
+    const dialog = document.getElementById("form-dialog");
+    const form = document.getElementById("book-form");
+    const closeBtn = document.getElementById("close-btn");
+    const tableBody = document.querySelector(".table-body");
+
+    const bookManager = new BookManager();
+
+    // Add initial books
+    bookManager.addBook(1, "The Stranger", "Albert Camus", 720, false);
+    bookManager.addBook(2, "1984", "George Orwell", 304, false);
+    bookManager.addBook(3, "Sapiens", "Yuval Noah Harari", 144, false);
+
+    const ui = new LibraryUI(addBtn, dialog, form, closeBtn, tableBody, bookManager);
+    ui.init();
+});
