@@ -13,6 +13,7 @@ class Book {
     }
 }
 
+// Manages the book add\delete in the library
 class BookManager {
     constructor() {
         this.myLibrary = [];
