@@ -159,3 +159,18 @@ button[type="submit"]:hover {
     gap: 5px;
     align-items: center;
 }
+
+/* validity */
+
+.valid {
+    border: 2px solid green;
+}
+
+.invalid {
+    border: 2px solid red;
+}
+
+.error {
+    color: red;
+    font-size: 0.9em;
+}

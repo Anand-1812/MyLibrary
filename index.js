@@ -60,6 +60,9 @@ class LibraryUI {
             this.handleFormSubmit();
         });
 
+        // this.form.title.addEventListener("input", () => this.validateForm());
+        // this.form.author.addEventListener("input", () => this.validateForm());
+
         this.renderBooks();
     }
 
@@ -68,6 +71,8 @@ class LibraryUI {
         const author = this.form.author.value.trim();
         const pages = Number(this.form.pages.value);
         const read = this.form.read.checked;
+
+        if (!this.validateForm()) return;
 
         if (title && author && pages) {
             this.bookManager.addBook(this.bookManager.getBooks().length + 1, title, author, pages, read);
@@ -122,6 +127,35 @@ class LibraryUI {
                 this.renderBooks();
             });
         });
+    }
+
+    validateForm() {
+        const form = document.getElementById("book-form");
+        const author = document.getElementById("author");
+        const title = document.getElementById("title");
+        const errorSpans = document.querySelectorAll("span#error");
+
+        const isUpperCase = (char) => char === char.toUpperCase() && char !== char.toLowerCase();
+
+        const isValidTitle = isUpperCase(title.value.charAt(0));
+        const isValidAuthor = isUpperCase(author.value.charAt(0));
+
+        errorSpans.forEach(span => {
+            span.textContent = "";
+            span.className = "";
+        });
+
+        if (!isValidTitle) {
+            errorSpans[0].textContent = "Title should start with an uppercase letter.";
+            errorSpans[0].className = "error";
+        }
+
+        if (!isValidAuthor) {
+            errorSpans[1].textContent = "Author name should start with an uppercase letter.";
+            errorSpans[1].className = "error";
+        }
+
+        return isValidAuthor && isValidTitle;
     }
 }
 
